@@ -1,13 +1,12 @@
 import argparse
-import hashlib
 import logging
-import sys
-from collections import defaultdict # noqa: F401
-from dataclasses import dataclass
+from collections import defaultdict  # noqa: F401
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 import pandas as pd
+
+from neat_fs.utils import parse_file_mode
+
 
 def setup_logging(verbose: bool = False) -> None:
     """Configure logging with appropriate level."""
@@ -25,12 +24,10 @@ def walk_directory_tree(root_path: Path) -> pd.DataFrame:
     for file_path in root_path.rglob('*'):
         if file_path.is_file():
             try:
-                s = (
-                    file_path.stat()
-                )  # Todo: Factor out these things into a separate function.
+                s = file_path.stat()
                 # Extract only permission bits and convert to octal numeric
-                perm = oct(s.st_mode & 0o777)[2:]  # e.g., '644', '700'
-                files.append(  # Todo: Factor out these things into a separate function.
+                file_type, permissions = parse_file_mode(s.st_mode)
+                files.append(
                     {
                         'path': file_path,
                         'name': file_path.name,
@@ -39,10 +36,12 @@ def walk_directory_tree(root_path: Path) -> pd.DataFrame:
                         'parent': str(file_path.parent),
                         'size': s.st_size,
                         'mode': s.st_mode,
-                        'perm': perm,
+                        'type': file_type,
+                        'perm': permissions,
                         'uid': s.st_uid,
                         'gid': s.st_gid,
                         'nlink': s.st_nlink,
+                        'inode': s.st_ino,
                     }
                 )
             except (OSError, FileNotFoundError) as e:
@@ -54,7 +53,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Scan a directory tree and return a pandas DataFrame with the file information.'
     )
-    parser.add_argument('root_path', type=Path, help='The root path to scan.')
+    parser.add_argument(
+        'root_path',
+        type=Path,
+        help='The root path to scan.',
+        default=Path('.'),
+        nargs='?',
+    )
+
     args = parser.parse_args()
     df = walk_directory_tree(args.root_path)
     print(df)

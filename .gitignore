@@ -1,3 +1,12 @@
+# Private files and directories
+*.csv
+*.*#
+data/
+
+*.log
+*.tmp
+*.bak
+
 # Python-generated files
 __pycache__/
 *.py[oc]
@@ -6,10 +15,32 @@ dist/
 wheels/
 *.egg-info
 
-# Virtual environments
-.venv
+# (Virtual) environments
+.env
+*.env
+.env.*
 
-# Private files and directories
-*.csv
-*.*#
-data/
+.venv
+venv
+
+# Packaging metadata
+*.egg-info/
+*.dist-info/
+.eggs/
+
+# Build outputs
+build/
+dist/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_convert/
+.profile_default/
+.DS_Store
+
+# Editors / IDE's
+.vscode/
+.cursor/
+.idea/
+*.swp
+*.swo

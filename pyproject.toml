@@ -1,11 +1,23 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "duplicate-files-finder"
+name = "neat-fs"
 version = "0.1.0"
-description = "Add your description here"
+description = "Keeps your filesystem cleaner and organized. Scans for redundancy and clean up fast."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.8"
 dependencies = [
-    "matplotlib>=3.10.6",
-    "notebook>=7.4.7",
-    "pandas>=2.3.2",
+    "pandas>=2.0.0",
 ]
+
+[project.optional-dependencies]
+notebook = [
+    "matplotlib>=3.7.0",
+    "notebook>=7.0.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
