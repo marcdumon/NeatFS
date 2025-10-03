@@ -1,19 +1,11 @@
 import argparse
 import logging
-from collections import defaultdict  # noqa: F401
 from pathlib import Path
 
 import pandas as pd
 
-from neat_fs.utils import parse_file_mode
+from neat_fs.utils import parse_file_mode, setup_logging
 
-
-def setup_logging(verbose: bool = False) -> None:
-    """Configure logging with appropriate level."""
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level, format='%(message)s', handlers=[logging.StreamHandler()]
-    )
 
 
 def walk_directory_tree(root_path: Path) -> pd.DataFrame:
@@ -60,11 +52,19 @@ if __name__ == '__main__':
         default=Path('.'),
         nargs='?',
     )
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='Enable verbose output'
+    )
 
     args = parser.parse_args()
+    
+    # Setup logging
+    setup_logging(args.verbose)
     df = walk_directory_tree(args.root_path)
-    print(df)
-    print(df[['uid', 'gid']])
-    df.to_csv('files.csv', index=False)
+    logging.debug(df)
+    # print(df[['uid', 'gid']])
+    # df.to_csv('files.csv', index=False)
     xx = df.groupby(['size', 'stem']).agg({'path': 'count'}).reset_index()
     print(xx)
