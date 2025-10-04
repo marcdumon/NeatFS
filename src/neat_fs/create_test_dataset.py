@@ -46,22 +46,22 @@ def create_test_dataset(base_dir="test_dataset"):
             subdir.mkdir(exist_ok=True)
         
         # Create original files
-        create_file(orig_dir / "dup_orig", size)
-        create_file(orig_dir / "nodup_orig", size)
-        create_file(orig_dir / "sym_orig", size)
-        create_file(orig_dir / "hard_orig", size)
+        create_file(orig_dir / "dup_orig.bin", size)
+        create_file(orig_dir / "nodup_orig.bin", size)
+        create_file(orig_dir / "sym_orig.bin", size)
+        create_file(orig_dir / "hard_orig.bin", size)
         
         # Create duplicate files
-        create_file(dup_dir / "nodup_dup", size)
-        shutil.copy2(orig_dir / "dup_orig", dup_dir / "dup_dup")
+        create_file(dup_dir / "nodup_dup.bin", size)
+        shutil.copy2(orig_dir / "dup_orig.bin", dup_dir / "dup_dup.bin")
         
         # Create symbolic links
-        create_file(sym_dir / "nodup_sym", size)
-        (sym_dir / "dup_sym").symlink_to(orig_dir / "sym_orig")
+        create_file(sym_dir / "nodup_sym.bin", size)
+        (sym_dir / "dup_sym.bin").symlink_to(orig_dir / "sym_orig.bin")
         
         # Create hard links
-        create_file(hard_dir / "nodup_hard", size)
-        os.link(orig_dir / "hard_orig", hard_dir / "dup_hard")
+        create_file(hard_dir / "nodup_hard.bin", size)
+        os.link(orig_dir / "hard_orig.bin", hard_dir / "dup_hard.bin")
     
     print(f"Test dataset created successfully in '{base_dir}' directory")
 
