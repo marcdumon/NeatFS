@@ -6,12 +6,12 @@ from pathlib import Path
 
 
 
-def calculate_file_hash(file_path: Path) -> str:
+def calculate_file_hash(file_path: Path, chunk_size: int = 256*1024) -> str:
     """Calculate MD5 hash of a file."""
     hash_md5 = hashlib.md5()
     try:
         with open(file_path, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
+            for chunk in iter(lambda: f.read(chunk_size), b""):
                 hash_md5.update(chunk)
         return hash_md5.hexdigest()
     except (IOError, OSError):
@@ -41,15 +41,17 @@ def find_duplicates(files: pd.DataFrame) -> pd.DataFrame:
     
     # Process each size group
     for size, file_paths in grouped.items():
-        if len(file_paths) <= 1:
-            # Single files get empty hash
-            for path in file_paths:
-                files.loc[files['file_path'] == path, 'hash'] = ""
-            continue
-        
-        # Calculate hashes for all files of this size
+
+
+        # if len(file_paths) <= 1: # Single files don't need processing.
+        #     continue
+
         hash_map = {}
+        print('--------------------------------')
+
         for file_path in file_paths:
+            print(size/1024/1024,file_path)
+
             file_hash = calculate_file_hash(file_path)
             if file_hash:
                 # Store hash in DataFrame

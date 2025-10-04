@@ -1,4 +1,5 @@
 # Private files and directories
+md_*
 *.csv
 *.*#
 data/
@@ -44,3 +45,4 @@ dist/
 .idea/
 *.swp
 *.swo
+

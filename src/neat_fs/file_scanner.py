@@ -44,6 +44,7 @@ def walk_directory_tree(root_path: Path) -> pd.DataFrame:
                         'nlink': s.st_nlink,
                         'inode': s.st_ino,
                         'is_symlink': file_path.is_symlink(),
+                        'is_hardlink': s.st_nlink > 1,
                         'symlink_target': symlink_target,
                     }
                 )
@@ -60,7 +61,7 @@ if __name__ == '__main__':
         'root_path',
         type=Path,
         help='The root path to scan.',
-        default=Path('/mnt/Media/'),
+        default=Path('/mnt/Databases/neat_fs_test_dataset'),
         nargs='?',
     )
     parser.add_argument(
