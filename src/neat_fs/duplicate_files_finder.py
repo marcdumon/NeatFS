@@ -76,39 +76,90 @@ def find_duplicates(files: pd.DataFrame) -> pd.DataFrame:
 
 def find_duplicates_chunked(df: pd.DataFrame, chunk_size: int = 1000, output_file: str = './data/files_with_duplicates.csv') -> None:
     """Find duplicates in chunks and update CSV incrementally."""
-    # Initialize output CSV with headers including is_dup and hash columns
-    df_with_headers = df.copy()
-    df_with_headers['is_dup'] = 0
-    df_with_headers['hash'] = ""
-    df_with_headers.head(0).to_csv(output_file, index=False)
-    
     total_files = len(df)
     processed_files = 0
     
     print(f"Processing {total_files} files in chunks of {chunk_size}")
     
-    # Process data in chunks
+    # First pass: collect all hashes
+    all_hashes = {}
+    temp_file = output_file + '.temp'
+    
+    # Initialize temp CSV with headers
+    df_with_headers = df.copy()
+    df_with_headers['is_dup'] = 0
+    df_with_headers['hash'] = ""
+    df_with_headers.head(0).to_csv(temp_file, index=False)
+    
+    # Process data in chunks to calculate hashes
     for i in range(0, total_files, chunk_size):
         chunk_end = min(i + chunk_size, total_files)
         chunk = df.iloc[i:chunk_end].copy()
         
         print(f"Processing chunk {i//chunk_size + 1}: files {i+1}-{chunk_end}")
         
-        # Find duplicates in this chunk
-        chunk_with_duplicates = find_duplicates(chunk)
+        # Calculate hashes for this chunk
+        chunk_with_hashes = calculate_hashes_only(chunk)
         
-        # Append to CSV (skip header for subsequent chunks)
-        chunk_with_duplicates.to_csv(output_file, mode='a', header=False, index=False)
+        # Collect hashes for global duplicate detection
+        for _, row in chunk_with_hashes.iterrows():
+            if row['hash']:
+                if row['hash'] not in all_hashes:
+                    all_hashes[row['hash']] = []
+                all_hashes[row['hash']].append(row['path'])
+        
+        # Append to temp CSV
+        chunk_with_hashes.to_csv(temp_file, mode='a', header=False, index=False)
         
         processed_files += len(chunk)
         print(f"Processed {processed_files}/{total_files} files")
     
+    print("Marking duplicates across all files...")
+    
+    # Second pass: mark duplicates based on global hash counts
+    df_with_hashes = pd.read_csv(temp_file)
+    
+    # Mark duplicates based on global hash counts
+    for hash_value, file_paths in all_hashes.items():
+        if len(file_paths) > 1:  # This hash appears in multiple files
+            df_with_hashes.loc[df_with_hashes['hash'] == hash_value, 'is_dup'] = 1
+    
+    # Save final result
+    df_with_hashes.to_csv(output_file, index=False)
+    
+    # Clean up temp file
+    import os
+    os.remove(temp_file)
+    
     print(f"Completed processing all files. Results saved to {output_file}")
 
 
-
-
-
+def calculate_hashes_only(files: pd.DataFrame) -> pd.DataFrame:
+    """Calculate hashes for files without duplicate detection."""
+    files = files.copy()
+    files['is_dup'] = 0
+    files['hash'] = ""
+    
+    # Group files by size
+    grouped = group_files_by_size(files)
+    
+    # Process each size group
+    for size, file_paths in grouped.items():
+        if len(file_paths) <= 1:
+            continue
+            
+        print('--------------------------------')
+        
+        for file_path in file_paths:
+            print(size/1024/1024, file_path)
+            file_hash = calculate_file_hash(file_path)
+            if file_hash:
+                files.loc[files['file_path'] == file_path, 'hash'] = file_hash
+    
+    # Clean up temporary column
+    files = files.drop('file_path', axis=1)
+    
+    return files
 
 
 
@@ -124,4 +175,7 @@ if __name__ == '__main__':
     df_with_duplicates = pd.read_csv('./data/files_with_duplicates.csv')
     duplicate_count = df_with_duplicates['is_dup'].sum()
     print(f"Found {duplicate_count} duplicate files")
+    
+    # # Filter to show only duplicates
+    # duplicates_only = filter_duplicates_only()
 
