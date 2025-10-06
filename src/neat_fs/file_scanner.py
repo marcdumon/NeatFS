@@ -61,7 +61,7 @@ if __name__ == '__main__':
         'root_path',
         type=Path,
         help='The root path to scan.',
-        default=Path('/mnt/Databases/neat_fs_test_dataset'),
+        default=Path('/mnt/Media'),
         nargs='?',
     )
     parser.add_argument(
