@@ -1,16 +1,3 @@
-"""Utility functions for the neat_fs package."""
-
-
-import logging
-
-
-def setup_logging(verbose: bool = False) -> None:
-    """Configure logging with appropriate level."""
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level, format='%(message)s', handlers=[logging.StreamHandler()]
-    )
-
 
 
 def parse_file_mode(st_mode: int) -> tuple[str, str]:
