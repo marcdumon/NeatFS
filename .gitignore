@@ -3,6 +3,7 @@ md_*
 *.csv
 *.*#
 data/
+data
 
 *.log
 *.tmp
