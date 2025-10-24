@@ -1,8 +1,17 @@
 from pathlib import Path
+
 import pandas as pd
+
 from neat_fs.utils import parse_file_mode
 
-def walk_directory_tree(root_path: str | Path = '.', output_file: str = 'fs_index.csv', batch_size: int = 100_000):
+
+def walk_directory_tree(
+    root_path: str | Path = '.',
+    exclude_paths: list[str] = [],
+    output_file: str = 'data/fs_index.csv',
+    batch_size: int = 100_000,
+    hash_algo: str = 'sha1',
+):
     """
     Walk the directory tree and save metadata to CSV in batches.
     """
@@ -11,8 +20,11 @@ def walk_directory_tree(root_path: str | Path = '.', output_file: str = 'fs_inde
 
     files = []
     first_batch = True
-    
+
     for path in root_path.rglob('*'):
+        if any(path.is_relative_to(Path(exclude_path)) for exclude_path in exclude_paths):
+            continue
+
         print(path)
 
         try:
@@ -26,9 +38,9 @@ def walk_directory_tree(root_path: str | Path = '.', output_file: str = 'fs_inde
         except Exception as e:
             print(f'Error: {e}')
             continue
-        
+
         if path.is_file() or path.is_dir():
-            s = path.stat()    
+            s = path.stat()
             files.append(
                 {
                     'path': path,
@@ -53,7 +65,7 @@ def walk_directory_tree(root_path: str | Path = '.', output_file: str = 'fs_inde
                     'device': s.st_dev,
                 }
             )
-    
+
             # Save batch when reaching batch_size
             if len(files) >= batch_size:
                 df = pd.DataFrame(files)
@@ -61,7 +73,7 @@ def walk_directory_tree(root_path: str | Path = '.', output_file: str = 'fs_inde
                 print(f'Saved batch of {len(files)} files')
                 first_batch = False
                 files.clear()
-    
+
     # Save remaining files
     if files:
         df = pd.DataFrame(files)
@@ -70,6 +82,16 @@ def walk_directory_tree(root_path: str | Path = '.', output_file: str = 'fs_inde
 
 
 if __name__ == '__main__':
-    walk_directory_tree('/', 'data/fs_index.csv', batch_size=100000)
+    import time
 
+    start_time = time.time()
+    walk_directory_tree(
+        '/',
+        exclude_paths=['/mnt/Backup'],
+        output_file='data/fs_index.csv',
+        batch_size=100000,
+        hash_algo='sha1',
+    )
+    end_time = time.time()
 
+    print(f'Total indexing time: {end_time - start_time:.2f} seconds')
