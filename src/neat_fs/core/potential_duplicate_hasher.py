@@ -23,7 +23,7 @@ def calculate_file_hash(
         return ''
 
 
-def hash_potential_duplicates(df: pd.DataFrame, output_file: str = 'data/hashed_duplicates.csv', batch_size: int = 1000) -> pd.DataFrame:
+def hash_potential_duplicates(df: pd.DataFrame, output_file: str = 'data/hashed_duplicates.csv', batch_size: int = 1000) -> None:
     """Hash files that have other files with the same size. These are potential duplicates."""
     # Count file sizes
     df['size_count'] = df.groupby('size')['size'].transform('count')
@@ -57,10 +57,13 @@ def hash_potential_duplicates(df: pd.DataFrame, output_file: str = 'data/hashed_
         batch_df = df.loc[processed_indices[-batch_count:]]
         batch_df.to_csv(output_file, mode='a', header=first_batch, index=False)
         print(f'Saved final batch of {batch_count} hashed files')
-    
+
+
+def add_hash_count(df: pd.DataFrame) -> pd.DataFrame:
+    """Add a column to the dataframe that counts the number of hashes for each file."""
+    df['hash_count'] = df.groupby('hash')['hash'].transform('count')
+
     return df
-
-
 
 if __name__ == "__main__":
     import time
@@ -68,6 +71,9 @@ if __name__ == "__main__":
     start_time = time.time()
     df = pd.read_csv('data/fs_index.csv')
     hash_potential_duplicates(df, 'data/hashed_duplicates.csv', batch_size=1000)
+    df = pd.read_csv('data/hashed_duplicates.csv')
+    df = add_hash_count(df)
+    df.to_csv('data/hashed_duplicates.csv', index=False)
     end_time = time.time()
     print(f'Total time: {end_time - start_time:.2f} seconds')
 
