@@ -12,7 +12,7 @@ A Python tool for finding duplicate files and directories with optimized perform
 ## Installation
 
 ```bash
-pip install -e .
+uv sync
 ```
 
 ## Usage
@@ -29,6 +29,36 @@ python main.py --files-only /path/to/search
 
 # Directories only  
 python main.py --dirs-only /path/to/search
+```
+
+### GUI: Streamlit File Browser
+
+Optional extra install:
+
+```bash
+uv sync --group gui
+```
+
+Run the GUI:
+
+```bash
+streamlit run src/neat_fs/gui/run_gui.py
+```
+
+Or with a CSV file path:
+
+```bash
+streamlit run src/neat_fs/gui/run_gui.py -- /path/to/files.csv
+```
+
+You can also use it from Python:
+
+```python
+import pandas as pd
+from neat_fs.gui.streamlit_app import run_file_browser
+
+df = pd.read_csv("/path/to/your/files.csv", low_memory=False)
+run_file_browser(df)
 ```
 
 ## Performance Results

@@ -12,10 +12,16 @@ dependencies = [
     "pandas>=2.0.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 notebook = [
     "matplotlib>=3.7.0",
     "notebook>=7.0.0",
+]
+
+gui = [
+    "streamlit>=1.31.0",
+    "streamlit-aggrid>=0.3.4.post3",
+    "humanize>=4.7.0",
 ]
 
 [tool.setuptools]
