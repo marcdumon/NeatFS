@@ -1,111 +1,53 @@
 # neat-fs
 
-A Python tool for finding duplicate files and directories with optimized performance.
+A Python tool for finding duplicate files and managing your filesystem.
 
-## Features
+## Description
 
-- **Efficient duplicate detection**: Groups files by size first, then hashes only potential duplicates
-- **Directory comparison**: Finds directories with identical contents
-- **Performance optimized**: Uses optimal chunk sizes for maximum throughput
-- **Flexible search**: Find files, directories, or both
+neat-fs helps you clean up redundant files by detecting duplicates. It groups files by size first, then hashes only potential duplicates for efficiency.
 
 ## Installation
-
-```bash
-uv sync
-```
-
-## Usage
-
-```bash
-# Find duplicates in current directory
-python main.py
-
-# Find duplicates in specific directory
-python main.py /path/to/search
-
-# Files only
-python main.py --files-only /path/to/search
-
-# Directories only  
-python main.py --dirs-only /path/to/search
-```
-
-### GUI: Streamlit File Browser
-
-Optional extra install:
 
 ```bash
 uv sync --group gui
 ```
 
-Run the GUI:
+## How to Run
 
+Start the GUI:
 ```bash
 streamlit run src/neat_fs/gui/run_gui.py
 ```
 
-Or with a CSV file path:
+### Manual Operation
+
+1. **Index your filesystem:**
+   - Set root directory
+   - Add excluded paths (one per line)
+   - Set output CSV
+   - Click "Run FS Indexer"
+
+2. **Find duplicates:**
+   - Set input CSV
+   - Set output CSV
+   - Click "Run Hasher"
+
+3. **Browse results:**
+   - Filter by name, size, date, etc.
+   - Select files
+   - Delete, move, or rename via actions panel
+
+## CLI Usage
 
 ```bash
-streamlit run src/neat_fs/gui/run_gui.py -- /path/to/files.csv
+# Find duplicates in current directory
+python main.py
+
+# Find duplicates in specific path
+python main.py /path/to/search
+
+# Files only / directories only
+python main.py --files-only /path/to/search
+python main.py --dirs-only /path/to/search
 ```
 
-You can also use it from Python:
-
-```python
-import pandas as pd
-from neat_fs.gui.streamlit_app import run_file_browser
-
-df = pd.read_csv("/path/to/your/files.csv", low_memory=False)
-run_file_browser(df)
-```
-
-## Performance Results
-
-Based on hash speed testing with files from 1KB to 20GB:
-
-### File Size vs Performance
-- **Small files** (1KB-100KB): 1.7-9.7 MB/s
-- **Medium files** (1MB-10MB): 198-315 MB/s  
-- **Large files** (100MB-500MB): 187-342 MB/s
-- **Very large files** (1GB-20GB): 137-555 MB/s
-
-### Optimal Chunk Size
-Testing shows **1MB chunks** provide best performance for most file sizes, achieving up to 555 MB/s throughput.
-
-### Performance Charts
-
-![Hash Speed Test Results](data/tests/01_hash_speed_test/01_hash_speed_plot.png)
-*File size vs hash time and throughput analysis*
-
-![Chunk Size Analysis](data/tests/01_hash_speed_test/01_chunk_size_plot.png)
-*Optimal chunk size performance comparison*
-
-### Key Insights
-1. **Size grouping is crucial**: Only hash files with matching sizes
-2. **Chunk size matters**: 1MB chunks optimize I/O performance
-3. **Large files scale well**: Performance remains consistent up to 20GB files
-4. **Memory efficient**: Chunked reading prevents memory issues
-
-### Detailed Analysis
-See the complete performance analysis in [`notebooks/hash_speed_test.ipynb`](notebooks/hash_speed_test.ipynb) including:
-- File size vs hash time relationships
-- Chunk size optimization testing
-- Throughput analysis with error bars
-- Performance recommendations
-
-## Project Structure
-
-```
-src/neat_fs/
-├── file_scanner.py      # Directory scanning
-├── duplicate_finder.py  # Duplicate detection
-└── utils.py            # Shared utilities
-```
-
-## Requirements
-
-- Python 3.8+
-- pandas (for data processing)
-- matplotlib (optional, for notebooks)
