@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
@@ -232,6 +234,114 @@ def _aggrid(df: pd.DataFrame, grid_key=None, initial_page=0) -> dict:
     )
 
 
+def _indexing_ui() -> None:
+    """UI for running fs_indexer."""
+    st.sidebar.header("FS Indexer")
+    
+    root_dir = st.sidebar.text_input("Root directory", value="/", key="indexer_root_dir")
+    
+    st.sidebar.caption("Exclude directories (one per line)")
+    exclude_text = st.sidebar.text_area(
+        "Excluded paths",
+        value="/bin\n/boot\n/dev\n/etc\n/lib\n/proc\n/tmp\n/usr\n/var",
+        height=150,
+        key="indexer_exclude_paths",
+    )
+    exclude_paths = [p.strip() for p in exclude_text.split("\n") if p.strip()]
+    
+    output_file = st.sidebar.text_input(
+        "Output file", value="data/fs_index.csv", key="indexer_output_file"
+    )
+    
+    batch_size = st.sidebar.number_input(
+        "Batch size", min_value=1000, value=100_000, step=10_000, key="indexer_batch_size"
+    )
+    
+    append_mode = st.sidebar.toggle("Append (vs restart)", value=True, key="indexer_append")
+    
+    if st.sidebar.button("Run FS Indexer", type="primary", key="indexer_run"):
+        if not root_dir or not Path(root_dir).exists():
+            st.sidebar.error("Invalid root directory")
+        else:
+            try:
+                # Handle restart mode
+                if not append_mode and Path(output_file).exists():
+                    Path(output_file).unlink()
+                    st.sidebar.info(f"Deleted existing {output_file}")
+                
+                # Ensure output directory exists
+                Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+                
+                from neat_fs.core.fs_indexer import walk_directory_tree
+                
+                with st.sidebar:
+                    with st.spinner("Indexing filesystem..."):
+                        walk_directory_tree(
+                            root_path=root_dir,
+                            exclude_paths=exclude_paths,
+                            output_file=output_file,
+                            batch_size=int(batch_size),
+                        )
+                st.sidebar.success(f"Indexing complete! Output: {output_file}")
+            except Exception as e:
+                st.sidebar.error(f"Error: {e}")
+
+
+def _hashing_ui() -> None:
+    """UI for running potential_duplicate_hasher."""
+    st.sidebar.header("Duplicate Hasher")
+    
+    input_file = st.sidebar.text_input(
+        "Input CSV file", value="data/fs_index.csv", key="hasher_input_file"
+    )
+    
+    output_file = st.sidebar.text_input(
+        "Output CSV file", value="data/hashed_duplicates.csv", key="hasher_output_file"
+    )
+    
+    batch_size = st.sidebar.number_input(
+        "Batch size", min_value=100, value=1000, step=100, key="hasher_batch_size"
+    )
+    
+    append_mode = st.sidebar.toggle("Append (vs restart)", value=True, key="hasher_append")
+    
+    if st.sidebar.button("Run Hasher", type="primary", key="hasher_run"):
+        if not Path(input_file).exists():
+            st.sidebar.error(f"Input file not found: {input_file}")
+        else:
+            try:
+                # Handle restart mode
+                if not append_mode and Path(output_file).exists():
+                    Path(output_file).unlink()
+                    st.sidebar.info(f"Deleted existing {output_file}")
+                
+                # Ensure output directory exists
+                Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+                
+                from neat_fs.core.potential_duplicate_hasher import hash_potential_duplicates
+                
+                with st.sidebar:
+                    with st.spinner("Hashing potential duplicates..."):
+                        df = pd.read_csv(input_file)
+                        hash_potential_duplicates(
+                            df=df,
+                            output_file=output_file,
+                            batch_size=int(batch_size),
+                        )
+                
+                # Add hash_count column
+                with st.spinner("Calculating hash counts..."):
+                    from neat_fs.core.potential_duplicate_hasher import add_hash_count
+                    df_out = pd.read_csv(output_file) if Path(output_file).exists() else pd.DataFrame()
+                    if not df_out.empty:
+                        df_out = add_hash_count(df_out)
+                        df_out.to_csv(output_file, index=False)
+                
+                st.sidebar.success(f"Hashing complete! Output: {output_file}")
+            except Exception as e:
+                st.sidebar.error(f"Error: {e}")
+
+
 def _actions_ui(selected_paths: list[str], df: pd.DataFrame, main_df_key: str) -> None:
     """Actions UI - updates main dataframe in session state."""
     st.subheader("Actions")
@@ -343,8 +453,12 @@ def run_file_browser(df: pd.DataFrame) -> None:
 
     st.title("Neat FS File Browser")
     
-    # Debug toggle in sidebar
+    # Sidebar with indexing, hashing, and debug controls
     with st.sidebar:
+        _indexing_ui()
+        st.sidebar.divider()
+        _hashing_ui()
+        st.sidebar.divider()
         debug_mode = st.checkbox("Debug mode", value=False, key="debug_aggrid_mode")
         if debug_mode:
             st.session_state["_debug_aggrid"] = True
@@ -406,7 +520,7 @@ def run_file_browser(df: pd.DataFrame) -> None:
     # Maintain a cache for selected rows across renders
     if "selected_rows_cache" not in st.session_state:
         st.session_state.selected_rows_cache = []
-
+    
     # Extract selected rows from AgGrid result
     sel = []
     if hasattr(grid_result, "selected_rows"):
@@ -423,7 +537,7 @@ def run_file_browser(df: pd.DataFrame) -> None:
     # Always overwrite selection cache (even if empty) to avoid stale selections
     st.session_state.selected_rows_cache = sel if isinstance(sel, list) else []
     sel = st.session_state.selected_rows_cache
-
+    
     # Extract paths
     selected_paths: list[str] = []
     for r in sel or []:
